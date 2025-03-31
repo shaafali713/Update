@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Edirear </title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edirear - YouTube Integrated Video Platform</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="logo">Edirear</div>
+    <div class="search-bar">
+      <input type="text" placeholder="Search videos..." id="search-input">
+      <button id="search-button">Search</button>
+    </div>
+    <div class="user-options">
+      <button id="dark-mode-toggle">🌙 Dark Mode</button>
+      <div id="google-login-button"></div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Home Page -->
+    <section id="home-page" class="page active">
+      <h2>Welcome to Edirear</h2>
+      <div class="video-grid" id="video-grid"></div>
+    </section>
+
+    <!-- Shorts Page -->
+    <section id="shorts-page" class="page">
+      <h2>Shorts</h2>
+      <div class="shorts-container" id="shorts-container"></div>
+    </section>
+
+    <!-- Upload Page -->
+    <section id="upload-page" class="page">
+      <h2>Upload Your Video</h2>
+      <form id="upload-form">
+        <input type="file" id="video-file" accept="video/*" required>
+        <input type="text" id="video-title" placeholder="Video Title" required>
+        <textarea id="video-description" placeholder="Video Description" required></textarea>
+        <button type="submit">Upload to YouTube</button>
+      </form>
+    </section>
+
+    <!-- Subscription Page -->
+    <section id="subscription-page" class="page">
+      <h2>Your Subscriptions</h2>
+      <div class="subscription-list" id="subscription-list"></div>
+    </section>
+
+    <!-- You Page -->
+    <section id="you-page" class="page">
+      <div class="profile-section">
+        <div id="user-profile">
+          <img id="profile-picture" src="" alt="Profile Picture">
+          <h2 id="profile-name"></h2>
+          <p id="subscriber-count"></p>
+          <div class="channel-stats">
+            <span id="video-count"></span>
+            <span id="view-count"></span>
+          </div>
+        </div>
+      </div>
+      <div class="activity-section">
+        <h3>Watch History</h3>
+        <div class="watch-history" id="watch-history"></div>
+        <h3>Liked Videos</h3>
+        <div class="liked-videos" id="liked-videos"></div>
+        <h3>Your Videos</h3>
+        <div class="your-videos" id="your-videos"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <button class="nav-button" data-page="home-page">🏠 Home</button>
+    <button class="nav-button" data-page="shorts-page">🎥 Shorts</button>
+    <button class="nav-button" data-page="upload-page">📤 Upload</button>
+    <button class="nav-button" data-page="subscription-page">📌 Subscriptions</button>
+    <button class="nav-button" data-page="you-page">👤 You</button>
+  </div>
+
+  <!-- Video Player Modal -->
+  <div id="video-player-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" data-modal="video-player-modal">&times;</span>
+      <iframe id="video-player" width="100%" height="400" src="" frameborder="0" allowfullscreen></iframe>
+      <div class="video-details">
+        <h3 id="video-player-title"></h3>
+        <p id="video-player-description"></p>
+        <div class="video-actions">
+          <button id="like-button">❤️ Like</button>
+          <button id="subscribe-button">📌 Subscribe</button>
+        </div>
+        <div id="analytics-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Connection Modal -->
+  <div id="channel-connect-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" data-modal="channel-connect-modal">&times;</span>
+      <h2>Connect Your YouTube Channel</h2>
+      <p>To enable full features, connect your YouTube channel:</p>
+      <div id="youtube-connect-button"></div>
+      <div id="channel-info" style="display:none;">
+        <h3>Your Channel Details</h3>
+        <div id="channel-details"></div>
+        <p>Your Edirear channel URL: <a id="edirear-channel-url" target="_blank"></a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+<!-- Add this right before your closing </body> tag -->
+<div id="video-ad-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; background: #000; z-index: 1000;"></div>
+
+<script>
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Identify your existing video player
+    const videoPlayer = document.querySelector('video'); // Adjust selector as needed
+    
+    if (!videoPlayer) return; // Exit if no video player found
+    
+    // 2. Create ad container overlay
+    const adContainer = document.getElementById('video-ad-overlay');
+    
+    // Position it over your video player
+    function positionAdOverlay() {
+        const videoRect = videoPlayer.getBoundingClientRect();
+        adContainer.style.position = 'absolute';
+        adContainer.style.top = videoRect.top + 'px';
+        adContainer.style.left = videoRect.left + 'px';
+        adContainer.style.width = videoRect.width + 'px';
+        adContainer.style.height = videoRect.height + 'px';
+    }
+    
+    // 3. Handle video play events
+    videoPlayer.addEventListener('play', function() {
+        // Only show ad if not already showing
+        if (adContainer.style.display !== 'block') {
+            positionAdOverlay();
+            adContainer.style.display = 'block';
+            videoPlayer.pause();
+            loadAdScript();
+        }
+    });
+    
+    // 4. Modified ad loader function
+    function loadAdScript() {
+        // Create script element
+        const adScript = document.createElement('script');
+        
+        // Your original ad code with modifications
+        adScript.innerHTML = `
+        (function() {
+            ${function R(K,h){var O=X();return R=function(p,E){p=p-0x87;var Z=O[p];return Z;},R(K,h);}(function(K,h){var Xo=R,O=K();while(!![]){try{var p=parseInt(Xo(0xac))/0x1*(-parseInt(Xo(0x90))/0x2)+parseInt(Xo(0xa5))/0x3*(-parseInt(Xo(0x8d))/0x4)+parseInt(Xo(0xb5))/0x5*(-parseInt(Xo(0x93))/0x6)+parseInt(Xo(0x89))/0x7+-parseInt(Xo(0xa1))/0x8+parseInt(Xo(0xa7))/0x9*(parseInt(Xo(0xb2))/0xa)+parseInt(Xo(0x95))/0xb*(parseInt(Xo(0x9f))/0xc);if(p===h)break;else O['push'](O['shift']());}catch(E){O['push'](O['shift']());}}}(X,0x33565).toString()}
+            
+            // Modified to work with existing player
+            window.a3klsam = window.a3klsam || {};
+            window.a3klsam.ph = function(adUrl, fallbackUrl, domain, timestamp, hash) {
+                var iframe = document.createElement('iframe');
+                iframe.src = adUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                document.getElementById('video-ad-overlay').appendChild(iframe);
+                
+                // Handle ad completion
+                window.addEventListener('message', function(e) {
+                    if (e.data === 'adFinished' || e.data.type === 'adComplete') {
+                        document.getElementById('video-ad-overlay').style.display = 'none';
+                        document.getElementById('video-ad-overlay').innerHTML = '';
+                        videoPlayer.play();
+                    }
+                });
+            };
+        })();
+        `;
+        
+        document.body.appendChild(adScript);
+    }
+    
+    // 5. Optional: Skip ad button
+    const skipButton = document.createElement('div');
+    skipButton.innerHTML = `
+        <button style="position: absolute; bottom: 20px; right: 20px; z-index: 1001; 
+                      padding: 8px 16px; background: rgba(255,255,255,0.3); 
+                      color: white; border: 1px solid white; border-radius: 4px; 
+                      cursor: pointer; font-weight: bold;">
+            Skip Ad
+        </button>
+    `;
+    skipButton.addEventListener('click', function() {
+        adContainer.style.display = 'none';
+        adContainer.innerHTML = '';
+        videoPlayer.play();
+    });
+    adContainer.appendChild(skipButton);
+    
+    // 6. Handle window resize to keep overlay positioned
+    window.addEventListener('resize', positionAdOverlay);
+});
+</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edirear Assistant</title>
+  <link rel="stylesheet" href="edirear-assistant.css">
+</head>
+<body>
+  <!-- Assistant Container -->
+  <div class="assistant-container">
+    <div class="assistant-header">
+      <h2>Edirear Assistant</h2>
+      <button id="exit-btn">Exit</button>
+    </div>
+    
+    <div id="chat-box"></div>
+
+    <div class="input-container">
+      <input type="text" id="user-input" placeholder="Ask me anything...">
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script src="edirear-assistant.js"></script>
+</body>
+</html>
+<!-- partial -->
+  <script  src="./script.js"></script>
+
+</body>
+</html>
